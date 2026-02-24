@@ -1,0 +1,14 @@
+{
+  "name": "gita",
+  "version": "1.0.0",
+  "description": "Trigger nearby voice assistants by speaking wake phrase + command",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  gita:
+    build: .
+    container_name: gita
+    ports:
+      - "3000:3000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ENABLE_PLAYBACK=${ENABLE_PLAYBACK:-true}
+      - DEFAULT_VOICE=${DEFAULT_VOICE:-troy}
+      - PORT=3000
+    volumes:
+      - ./data/out:/app/data/out
+    # Note: To enable host audio playback from within a docker container, 
+    # additional device mappings or pulseaudio configurations may be required depending on the OS.
+    # For macOS, Docker desktop does not easily share host audio without custom setups.
+    # For Linux, you might need to map /dev/snd:
+    # devices:
+    #   - /dev/snd:/dev/snd
+    restart: unless-stopped
