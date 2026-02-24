@@ -8,7 +8,7 @@ export async function generateTTS(text, voiceOverride, speedOverride) {
     throw new Error("GROQ_API_KEY is not set in environment.");
   }
 
-  const voice = voiceOverride || process.env.DEFAULT_VOICE || 'troy';
+  const voice = voiceOverride || process.env.DEFAULT_VOICE || 'daniel';
   const speed = speedOverride || 1.0;
   
   const response = await fetch('https://api.groq.com/openai/v1/audio/speech', {
