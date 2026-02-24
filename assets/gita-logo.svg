@@ -1,0 +1,44 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="ghost" x1="320" y1="210" x2="700" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E2E8F0"/>
+      <stop offset="1" stop-color="#CBD5E1"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="372" y1="620" x2="658" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+    <filter id="glow" x="250" y="140" width="540" height="760" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feBlend in="SourceGraphic" in2="blur" mode="screen"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+
+  <!-- Ghost body -->
+  <g filter="url(#glow)">
+    <path d="M512 204C404 204 316 292 316 400V640C316 673 335 694 360 694C383 694 396 679 416 679C441 679 447 704 480 704C514 704 520 679 545 679C570 679 575 704 610 704C643 704 648 679 673 679C697 679 708 694 730 694C755 694 774 673 774 640V400C774 292 686 204 578 204H512Z" fill="url(#ghost)"/>
+
+    <!-- Eyes -->
+    <ellipse cx="450" cy="430" rx="36" ry="44" fill="#0F172A"/>
+    <ellipse cx="574" cy="430" rx="36" ry="44" fill="#0F172A"/>
+    <circle cx="438" cy="416" r="9" fill="#14B8A6"/>
+    <circle cx="562" cy="416" r="9" fill="#14B8A6"/>
+
+    <!-- Smile -->
+    <path d="M446 534C470 560 554 560 578 534" stroke="#0F172A" stroke-width="20" stroke-linecap="round"/>
+
+    <!-- Assistant ring -->
+    <ellipse cx="512" cy="770" rx="182" ry="88" fill="url(#teal)" opacity="0.94"/>
+    <ellipse cx="512" cy="770" rx="118" ry="48" fill="#0F172A" opacity="0.42"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="512" y="920" text-anchor="middle" fill="#E2E8F0" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="72" font-weight="800" letter-spacing="4">GITA</text>
+  <text x="512" y="965" text-anchor="middle" fill="#94A3B8" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="28" font-weight="600" letter-spacing="2">Ghost In The Assistant</text>
+</svg>
