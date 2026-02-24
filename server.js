@@ -12,46 +12,60 @@ const PORT = process.env.PORT || 3000;
 
 app.post('/trigger', async (req, res) => {
   try {
-    const { assistant, command, voice, speed, wakePhrase } = req.body;
+    const { assistant, command, voice, speed, wakePhrase, wakeDelayMs } = req.body;
 
     if (!assistant || !command) {
       return res.status(400).json({ error: "Missing 'assistant' or 'command' in request body." });
     }
 
-    let phrase = "";
+    const effectiveSpeed = Number(speed ?? process.env.DEFAULT_SPEED ?? 0.9);
+    const effectiveWakeDelayMs = Number(wakeDelayMs ?? process.env.WAKE_DELAY_MS ?? 2500);
+
+    let wake = "";
     switch (assistant.toLowerCase()) {
       case 'alexa':
-        phrase = `Alexa, ${command}`;
+        wake = 'Alexa';
         break;
       case 'google':
-        phrase = `Hey Google, ${command}`;
+        wake = 'Hey Google';
         break;
       case 'siri':
-        phrase = `Hey Siri, ${command}`;
+        wake = 'Hey Siri';
         break;
       case 'custom':
         if (!wakePhrase) {
           return res.status(400).json({ error: "Missing 'wakePhrase' for custom assistant." });
         }
-        phrase = `${wakePhrase}, ${command}`;
+        wake = wakePhrase;
         break;
       default:
         return res.status(400).json({ error: "Invalid assistant. Supported: alexa, google, siri, custom." });
     }
 
-    console.log(`Generating TTS for: "${phrase}"`);
-    
-    // Generate audio
-    const audioPath = await generateTTS(phrase, voice, speed);
-    
-    // Play audio
-    const played = await playAudio(audioPath);
+    console.log(`Generating wake TTS for: "${wake}" @${effectiveSpeed}x`);
+    const wakeAudioPath = await generateTTS(wake, voice, effectiveSpeed);
+
+    console.log(`Generating command TTS for: "${command}" @${effectiveSpeed}x`);
+    const commandAudioPath = await generateTTS(command, voice, effectiveSpeed);
+
+    const playedWake = await playAudio(wakeAudioPath);
+    if (playedWake && effectiveWakeDelayMs > 0) {
+      await new Promise(r => setTimeout(r, effectiveWakeDelayMs));
+    }
+    const playedCommand = await playAudio(commandAudioPath);
 
     res.json({
       success: true,
-      phrase,
-      audioPath,
-      played
+      wake,
+      command,
+      phrase: `${wake}, ${command}`,
+      wakeAudioPath,
+      commandAudioPath,
+      played: playedWake || playedCommand,
+      playedWake,
+      playedCommand,
+      wakeDelayMs: effectiveWakeDelayMs,
+      speed: effectiveSpeed
     });
 
   } catch (error) {
