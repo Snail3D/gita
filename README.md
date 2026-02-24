@@ -1,70 +1,131 @@
 # GITA (Ghost In The Assistant)
 
-A dockerized service that accepts a text command and triggers nearby voice assistants by speaking their wake phrase + the command through host speakers.
+**GITA** is a tiny Docker-ready service that turns text into wake-word commands for voice assistants.
 
-## Disclaimer & Reliability Limits
-**Important Note:** This service controls assistants via audible wake-word playback. Its reliability depends entirely on microphone/speaker placement, hardware volume, device settings, and background noise. It cannot bypass platform restrictions or directly issue silent digital commands to external assistant APIs unless they have their own native integrations. It is a physical "hack" requiring clear line-of-sight audio to the target assistant device.
+It is built for the **OpenClaw + TealClaw ecosystem**.
 
-## Prerequisites
-- Node.js (for local running) or Docker/Docker Compose
-- Groq API Key (for Orpheus TTS)
-- FFmpeg/ffplay installed on the host (if running locally and using `ENABLE_PLAYBACK=true`)
+- TealClaw repo: https://github.com/Snail3D/tealclaw
+- GITA repo: https://github.com/Snail3D/gita
 
-## Environment Setup
-Copy `.env.example` to `.env`:
+## What it does
+
+You send a command like:
+- `assistant=siri, command="open messages"`
+
+GITA will:
+1. Generate a wake phrase clip (e.g. `Hey Siri`)
+2. Wait a short delay (default 2500ms)
+3. Generate/play the command clip (e.g. `open messages`)
+
+This significantly improves wake-word hit rate vs speaking everything in one clip.
+
+---
+
+## Quick start
+
 ```bash
+cd /Users/ericwoodard/Desktop/programs/gita
 cp .env.example .env
-```
-Update your `.env` with your `GROQ_API_KEY`.
-
-## Running the Service
-
-### Using Docker Compose
-```bash
-docker-compose up --build -d
-```
-*Note on Docker Audio:* Playing audio directly to host speakers from a Docker container can be complex depending on the OS (e.g., macOS Docker Desktop doesn't easily share host audio without custom ALSA/PulseAudio setups). If you need direct speaker playback, running the service locally (Node.js) is recommended.
-
-### Running Locally (Node.js)
-```bash
+# add your GROQ_API_KEY in .env
 npm install
 npm start
 ```
 
-## API Endpoint
+Service runs on `http://localhost:3000`.
+
+---
+
+## `.env` example
+
+```env
+GROQ_API_KEY=your_key_here
+ENABLE_PLAYBACK=true
+DEFAULT_VOICE=troy
+DEFAULT_SPEED=0.9
+WAKE_DELAY_MS=2500
+PORT=3000
+```
+
+---
+
+## API
 
 ### `POST /trigger`
 
-**Payload:**
+Payload:
+
 ```json
 {
   "assistant": "alexa",
-  "command": "turn on the living room lights",
+  "command": "play the audio bible on Audible",
   "voice": "troy",
-  "speed": 1.0,
-  "wakePhrase": "Computer" // Optional, required only if assistant="custom"
+  "speed": 0.9,
+  "wakeDelayMs": 2500,
+  "wakePhrase": "Computer"
 }
 ```
 
-**Supported Assistants:**
-- `alexa` (Alexa, ...)
-- `google` (Hey Google, ...)
-- `siri` (Hey Siri, ...)
-- `custom` (Uses `wakePhrase` from request)
+- `assistant`: `alexa | google | siri | custom`
+- `wakePhrase`: required only when `assistant=custom`
 
-**Example cURL:**
+### Example: Siri
+
 ```bash
 curl -X POST http://localhost:3000/trigger \
   -H "Content-Type: application/json" \
   -d '{
-    "assistant": "alexa",
-    "command": "what time is it?"
+    "assistant":"siri",
+    "command":"open messages",
+    "speed":0.9,
+    "wakeDelayMs":2800
   }'
 ```
 
-## How It Works
-1. Receives the POST payload.
-2. Constructs the wake-word phrase.
-3. Calls Groq Orpheus TTS (`canopylabs/orpheus-v1-english`) to generate an MP3 audio file.
-4. Saves the MP3 in `data/out/`.
-5. Plays the audio file using `ffplay` if `ENABLE_PLAYBACK=true`.
+### Example: Alexa
+
+```bash
+curl -X POST http://localhost:3000/trigger \
+  -H "Content-Type: application/json" \
+  -d '{
+    "assistant":"alexa",
+    "command":"play the audio bible on Audible",
+    "speed":0.9,
+    "wakeDelayMs":2500
+  }'
+```
+
+---
+
+## OpenClaw / TealClaw integration
+
+GITA is designed to be called from TealClaw `/gita` flows and cron automations.
+
+Typical flow:
+1. TealClaw command (`/gita ...`)
+2. POST to GITA endpoint
+3. GITA plays wake + command audio on host speakers
+
+---
+
+## Docker
+
+```bash
+docker-compose up --build -d
+```
+
+> Note: host speaker playback from Docker can be tricky on macOS Docker Desktop.
+> For reliable local speaker playback, run with Node on host.
+
+---
+
+## Important limitations
+
+This is an **audio-trigger hack** (not direct Siri/Alexa API control).
+
+Reliability depends on:
+- speaker volume
+- mic distance/angle
+- room noise
+- device assistant settings
+
+It cannot bypass platform restrictions with silent/private APIs.

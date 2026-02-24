@@ -22,7 +22,7 @@ export async function generateTTS(text, voiceOverride, speedOverride) {
       input: text,
       voice: voice,
       speed: speed,
-      response_format: 'mp3'
+      response_format: 'wav'
     })
   });
 
@@ -33,7 +33,7 @@ export async function generateTTS(text, voiceOverride, speedOverride) {
 
   const buffer = await response.arrayBuffer();
   
-  const filename = `${crypto.randomUUID()}.mp3`;
+  const filename = `${crypto.randomUUID()}.wav`;
   const outDir = path.resolve('data', 'out');
   
   if (!fs.existsSync(outDir)) {
