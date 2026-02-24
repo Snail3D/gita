@@ -2,7 +2,9 @@
 
 **GITA** is a tiny Docker-ready service that turns text into wake-word commands for voice assistants.
 
-It is built for the **OpenClaw + TealClaw ecosystem**.
+It works standalone, and is also deeply integrated with the **OpenClaw ecosystem**.
+
+**TealClaw is optional, but highly awesome when paired.**
 
 - TealClaw repo: https://github.com/Snail3D/tealclaw
 - GITA repo: https://github.com/Snail3D/gita
@@ -98,9 +100,14 @@ curl -X POST http://localhost:3000/trigger \
 
 ## OpenClaw / TealClaw integration
 
-GITA is designed to be called from TealClaw `/gita` flows and cron automations.
+GITA can run by itself (curl/API/automation scripts) and does **not** require TealClaw.
 
-Typical flow:
+If you do use TealClaw, it's highly integrated:
+- use the **`/gita`** command
+- trigger from cron/schedules
+- route remote requests through your OpenClaw setup
+
+Typical TealClaw flow:
 1. TealClaw command (`/gita ...`)
 2. POST to GITA endpoint
 3. GITA plays wake + command audio on host speakers
