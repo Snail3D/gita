@@ -1,5 +1,9 @@
 # GITA (Ghost In The Assistant)
 
+<p align="center">
+  <img src="assets/gita-logo.svg" alt="GITA logo" width="220" />
+</p>
+
 **GITA** is a tiny Docker-ready service that turns text into wake-word commands for voice assistants.
 
 It works standalone, and is also deeply integrated with the **OpenClaw ecosystem**.
