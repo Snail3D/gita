@@ -3,13 +3,28 @@ import util from 'util';
 
 const execAsync = util.promisify(exec);
 
+export async function sleep(ms){
+  return new Promise(r=>setTimeout(r,ms));
+}
+
+export async function setSystemVolume(percent){
+  if (typeof percent !== 'number' || Number.isNaN(percent)) return false;
+  const clamped=Math.max(0,Math.min(100,Math.round(percent)));
+  try{
+    // macOS system output volume via AppleScript
+    await execAsync(`osascript -e 'set volume output volume ${clamped}'`);
+    return true;
+  }catch{
+    return false;
+  }
+}
+
 export async function playAudio(filePath) {
   if (process.env.ENABLE_PLAYBACK !== 'true') {
     return false;
   }
 
   try {
-    // Check if ffplay is available
     await execAsync('ffplay -version');
   } catch (err) {
     console.warn("Playback enabled but ffplay is not available in PATH. Skipping playback.");
@@ -18,8 +33,6 @@ export async function playAudio(filePath) {
 
   try {
     console.log(`Playing audio: ${filePath}`);
-    // -nodisp prevents ffplay from trying to open a display window
-    // -autoexit exits when the file is done playing
     await execAsync(`ffplay -nodisp -autoexit "${filePath}"`);
     return true;
   } catch (err) {

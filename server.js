@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { generateTTS } from './tts.js';
-import { playAudio } from './playback.js';
+import { playAudio, setSystemVolume, sleep } from './playback.js';
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 app.post('/trigger', async (req, res) => {
   try {
-    const { assistant, command, voice, speed, wakePhrase, wakeDelayMs } = req.body;
+    const { assistant, command, voice, speed, wakePhrase, wakeDelayMs, prePauseMs, preVolume } = req.body;
 
     if (!assistant || !command) {
       return res.status(400).json({ error: "Missing 'assistant' or 'command' in request body." });
@@ -42,6 +42,17 @@ app.post('/trigger', async (req, res) => {
         return res.status(400).json({ error: "Invalid assistant. Supported: alexa, google, siri, custom." });
     }
 
+    const effectivePrePauseMs = Number(prePauseMs ?? process.env.PRE_PAUSE_MS ?? 0);
+    const effectivePreVolume = (preVolume ?? process.env.PRE_VOLUME) !== undefined ? Number(preVolume ?? process.env.PRE_VOLUME) : null;
+
+    if (effectivePrePauseMs > 0) {
+      await sleep(effectivePrePauseMs);
+    }
+    let volumeAdjusted=false;
+    if (effectivePreVolume !== null && !Number.isNaN(effectivePreVolume)) {
+      volumeAdjusted = await setSystemVolume(effectivePreVolume);
+    }
+
     console.log(`Generating wake TTS for: "${wake}" @${effectiveSpeed}x`);
     const wakeAudioPath = await generateTTS(wake, voice, effectiveSpeed);
 
@@ -65,7 +76,10 @@ app.post('/trigger', async (req, res) => {
       playedWake,
       playedCommand,
       wakeDelayMs: effectiveWakeDelayMs,
-      speed: effectiveSpeed
+      speed: effectiveSpeed,
+      prePauseMs: effectivePrePauseMs,
+      preVolume: effectivePreVolume,
+      volumeAdjusted
     });
 
   } catch (error) {
