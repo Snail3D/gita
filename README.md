@@ -67,12 +67,16 @@ Payload:
   "voice": "troy",
   "speed": 0.9,
   "wakeDelayMs": 2500,
-  "wakePhrase": "Computer"
+  "wakePhrase": "Computer",
+  "prePauseMs": 0,
+  "preVolume": null
 }
 ```
 
 - `assistant`: `alexa | google | siri | custom`
 - `wakePhrase`: required only when `assistant=custom`
+- `prePauseMs`: delay **before** wake phrase playback (useful for timed follow-up commands)
+- `preVolume`: optional host volume set before playback
 
 ### Example: Siri
 
@@ -97,6 +101,30 @@ curl -X POST http://localhost:3000/trigger \
     "command":"play the audio bible on Audible",
     "speed":0.9,
     "wakeDelayMs":2500
+  }'
+```
+
+### Example: two-step Alexa sequence (play, then raise volume 5s later)
+
+```bash
+# 1) Play music using spoken "eighties" phrasing for clearer TTS
+curl -X POST http://localhost:3000/trigger \
+  -H "Content-Type: application/json" \
+  -d '{
+    "assistant":"alexa",
+    "command":"play eighties music",
+    "speed":0.9
+  }'
+
+# 2) Five seconds later, use custom wake phrase + follow-up command
+curl -X POST http://localhost:3000/trigger \
+  -H "Content-Type: application/json" \
+  -d '{
+    "assistant":"custom",
+    "wakePhrase":"Hey Alexa",
+    "command":"raise the volume",
+    "prePauseMs":5000,
+    "speed":0.9
   }'
 ```
 
