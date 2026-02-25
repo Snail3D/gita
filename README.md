@@ -157,6 +157,60 @@ Tip: for Voice Control, explicit UI-target commands (e.g. `click Search`, `show 
 
 ---
 
+
+
+### `POST /flow/run`
+
+Run a local step flow for desktop control timing.
+
+```json
+{
+  "flow": [
+    {"op":"speak","text":"open Notes","speed":1.18},
+    {"op":"wait","ms":1800},
+    {"op":"speak","text":"click New Note","speed":1.18}
+  ]
+}
+```
+
+Supported ops:
+- `speak` → fields: `text`, optional `voice`, `speed`
+- `wait` → fields: `ms`
+- `trigger` → same payload as `/trigger`
+
+### Duplex mode (standalone in GITA)
+
+GITA now supports a local duplex loop for back-and-forth computer control.
+
+#### Start
+
+```bash
+curl -X POST http://localhost:3000/duplex/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode":"voice-control",
+    "turnSeconds":5,
+    "turnGapMs":700,
+    "maxTurns":50
+  }'
+```
+
+Modes:
+- `voice-control` → replay recognized text as direct computer commands (no wake phrase)
+- `assistant` → route recognized text through assistant wake/command flow (`assistant`, `wakePhrase`)
+
+#### Stop / Status
+
+```bash
+curl -X POST http://localhost:3000/duplex/stop
+curl http://localhost:3000/duplex/status
+```
+
+Notes:
+- Duplex capture uses local microphone via `ffmpeg` (macOS `avfoundation`).
+- Requires Groq key for STT + TTS.
+- Say "stop duplex" in the mic to end session naturally.
+
 ## OpenClaw / TealClaw integration
 
 GITA can run by itself (curl/API/automation scripts) and does **not** require TealClaw.
