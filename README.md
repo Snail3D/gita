@@ -128,6 +128,33 @@ curl -X POST http://localhost:3000/trigger \
   }'
 ```
 
+
+### Voice Control mode (Mac accessibility)
+
+For macOS Voice Control flows, direct command playback (no wake phrase) can be more reliable than routing through `/trigger`.
+
+Use a tiny local Node runner that speaks each command with tuned timing:
+
+```js
+import { generateTTS } from './tts.js';
+import { playAudio, sleep } from './playback.js';
+
+const speed = 1.18;
+const steps = [
+  { text: 'open Notes', pauseMs: 1800 },
+  { text: 'click New Note', pauseMs: 1600 },
+  { text: 'type hello from voice control', pauseMs: 0 }
+];
+
+for (const step of steps) {
+  const path = await generateTTS(step.text, undefined, speed);
+  await playAudio(path);
+  if (step.pauseMs) await sleep(step.pauseMs);
+}
+```
+
+Tip: for Voice Control, explicit UI-target commands (e.g. `click Search`, `show numbers`, `click 14`) are often more reliable than keyboard shortcut phrases.
+
 ---
 
 ## OpenClaw / TealClaw integration
