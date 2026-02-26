@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+.env*
+node_modules/
+data/out/*
+!data/out/.gitkeep
+README.md
+SKILL.md
+scripts/

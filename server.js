@@ -3,11 +3,14 @@ import dotenv from 'dotenv';
 import { generateTTS } from './tts.js';
 import { playAudio, setSystemVolume, sleep } from './playback.js';
 import { captureAndTranscribe } from './stt.js';
+import { runAndroidAction } from './android.js';
+import { getDb, addPreset, deletePreset, addJob, updateJob, deleteJob, addLog } from './scheduler.js';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
 
@@ -30,8 +33,8 @@ function resolveWake({ assistant, wakePhrase }) {
   return '';
 }
 
-async function speakText(text, { voice, speed } = {}) {
-  const audioPath = await generateTTS(text, voice, speed);
+async function speakText(text, { voice, speed, model } = {}) {
+  const audioPath = await generateTTS(text, voice, speed, model);
   const played = await playAudio(audioPath);
   return { text, audioPath, played };
 }
@@ -42,6 +45,7 @@ async function runTrigger(payload) {
     command,
     voice,
     speed,
+    model,
     wakePhrase,
     wakeDelayMs,
     prePauseMs,
@@ -78,15 +82,22 @@ async function runTrigger(payload) {
   let wakeAudioPath = null;
   let playedWake = false;
 
+  addLog(`Trigger: ${assistant} - ${command}`);
+
+  // Pre-generate both clips before playback to avoid dead air between wake and command.
   if (wake) {
-    console.log(`Generating wake TTS for: "${wake}" @${effectiveSpeed}x`);
-    wakeAudioPath = await generateTTS(wake, voice, effectiveSpeed);
+    console.log(`Pre-generating wake TTS for: "${wake}" @${effectiveSpeed}x`);
+    wakeAudioPath = await generateTTS(wake, voice, effectiveSpeed, model);
+  }
+
+  console.log(`Pre-generating command TTS for: "${command}" @${effectiveSpeed}x`);
+  const commandAudioPath = await generateTTS(command, voice, effectiveSpeed, model);
+
+  if (wakeAudioPath) {
     playedWake = await playAudio(wakeAudioPath);
     if (playedWake && effectiveWakeDelayMs > 0) await sleep(effectiveWakeDelayMs);
   }
 
-  console.log(`Generating command TTS for: "${command}" @${effectiveSpeed}x`);
-  const commandAudioPath = await generateTTS(command, voice, effectiveSpeed);
   const playedCommand = await playAudio(commandAudioPath);
 
   return {
@@ -120,7 +131,7 @@ async function runFlow(flow = []) {
     if (op === 'speak') {
       const text = String(step.text || '').trim();
       if (!text) throw new Error('flow speak step missing text');
-      const out = await speakText(text, { voice: step.voice, speed: step.speed });
+      const out = await speakText(text, { voice: step.voice, speed: step.speed, model: step.model });
       results.push({ op, ok: true, text: out.text, played: out.played });
       continue;
     }
@@ -144,6 +155,7 @@ async function duplexLoop(sessionId, cfg) {
     maxTurns = 100,
     speed,
     voice,
+    model
   } = cfg;
 
   duplexState.active = true;
@@ -180,7 +192,7 @@ async function duplexLoop(sessionId, cfg) {
 
     try {
       if (mode === 'voice-control') {
-        await speakText(heard, { speed: Number(speed ?? 1.18), voice });
+        await speakText(heard, { speed: Number(speed ?? 1.18), voice, model });
       } else {
         await runTrigger({
           assistant,
@@ -200,11 +212,13 @@ async function duplexLoop(sessionId, cfg) {
   duplexState.active = false;
 }
 
+// REST endpoints
 app.post('/trigger', async (req, res) => {
   try {
     const out = await runTrigger(req.body || {});
     res.json(out);
   } catch (error) {
+    addLog(`Error /trigger: ${error.message}`);
     console.error('Error processing /trigger:', error);
     res.status(500).json({ error: error.message });
   }
@@ -246,6 +260,80 @@ app.get('/duplex/status', async (_req, res) => {
   res.json({ success: true, duplex: duplexState });
 });
 
+app.post('/android/action', async (req, res) => {
+  try {
+    const { action, deviceId, ...params } = req.body || {};
+    if (!action) return res.status(400).json({ error: "Missing 'action'" });
+    const out = await runAndroidAction({ action, deviceId, params });
+    res.json({ success: true, action, deviceId: deviceId || null, ...out });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
+
+// Scheduler & DB API endpoints
+app.get('/api/data', (req, res) => {
+  res.json(getDb());
+});
+
+app.post('/api/presets', (req, res) => {
+  addPreset(req.body);
+  res.json({ success: true });
+});
+
+app.delete('/api/presets/:id', (req, res) => {
+  deletePreset(req.params.id);
+  res.json({ success: true });
+});
+
+app.post('/api/jobs', (req, res) => {
+  addJob(req.body);
+  res.json({ success: true });
+});
+
+app.put('/api/jobs/:id', (req, res) => {
+  updateJob(req.params.id, req.body);
+  res.json({ success: true });
+});
+
+app.delete('/api/jobs/:id', (req, res) => {
+  deleteJob(req.params.id);
+  res.json({ success: true });
+});
+
+app.get('/api/logs', (req, res) => {
+  res.json({ logs: getDb().logs });
+});
+
 app.listen(PORT, () => {
   console.log(`GITA (Ghost In The Assistant) service listening on port ${PORT}`);
+  addLog('GITA Server Started');
 });
+
+// Simple Scheduler Loop (runs every minute to check jobs)
+let lastMinute = -1;
+setInterval(() => {
+  const d = new Date();
+  const currentMinute = d.getMinutes();
+  if (currentMinute !== lastMinute) {
+    lastMinute = currentMinute;
+    const timeStr = `${d.getHours().toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+    const db = getDb();
+    const activeJobs = db.jobs.filter(j => j.active && j.time === timeStr);
+    
+    for (const job of activeJobs) {
+      const preset = db.presets.find(p => p.id === job.presetId);
+      if (preset) {
+        addLog(`Scheduled job run: ${preset.name} (${timeStr})`);
+        runTrigger(preset).catch(e => {
+          console.error('Job error:', e);
+          addLog(`Job error: ${e.message}`);
+        });
+      }
+    }
+  }
+}, 10000); // Check every 10 seconds

@@ -44,9 +44,19 @@ Service runs on `http://localhost:3000`.
 ## `.env` example
 
 ```env
-GROQ_API_KEY=your_key_here
+# Use Voicebox local API (recommended for cloned voice)
+TTS_PROVIDER=voicebox
+VOICEBOX_URL=http://127.0.0.1:17493
+VOICEBOX_PROFILE_ID=your_profile_uuid_here
+VOICEBOX_MODEL_SIZE=0.6B
+VOICEBOX_LANGUAGE=en
+
+# Groq fallback provider option
+# TTS_PROVIDER=groq
+# GROQ_API_KEY=your_key_here
+# DEFAULT_VOICE=troy
+
 ENABLE_PLAYBACK=true
-DEFAULT_VOICE=troy
 DEFAULT_SPEED=0.9
 WAKE_DELAY_MS=2500
 PORT=3000
@@ -211,6 +221,51 @@ Notes:
 - Requires Groq key for STT + TTS.
 - Say "stop duplex" in the mic to end session naturally.
 
+### Android manipulation layer (ADB)
+
+GITA can now send direct Android device actions via ADB.
+
+Endpoint: `POST /android/action`
+
+Payload:
+```json
+{
+  "action": "tap",
+  "deviceId": "emulator-5554",
+  "x": 540,
+  "y": 1700
+}
+```
+
+Supported actions:
+- `devices` → list connected devices (`adb devices`)
+- `shell` → run raw shell command (`command` as array or string)
+- `tap` → `x`, `y`
+- `swipe` → `x1`, `y1`, `x2`, `y2`, optional `durationMs`
+- `type` → `text`
+- `keyevent` → `key` (e.g., `KEYCODE_HOME`, `66`)
+- `open-url` → `url`
+- `launch-app` → `pkg`
+
+Examples:
+
+```bash
+# List devices
+curl -X POST http://localhost:3000/android/action \
+  -H "Content-Type: application/json" \
+  -d '{"action":"devices"}'
+
+# Tap the screen
+curl -X POST http://localhost:3000/android/action \
+  -H "Content-Type: application/json" \
+  -d '{"action":"tap","x":540,"y":1700}'
+
+# Type into focused input
+curl -X POST http://localhost:3000/android/action \
+  -H "Content-Type: application/json" \
+  -d '{"action":"type","text":"hello from gita"}'
+```
+
 ## OpenClaw / TealClaw integration
 
 GITA can run by itself (curl/API/automation scripts) and does **not** require TealClaw.
@@ -226,6 +281,23 @@ Typical TealClaw flow:
 3. GITA plays wake + command audio on host speakers
 
 ---
+
+
+## 🖥️ Headless Startup & Ops
+
+For background execution and production use, run Gita using Docker Compose:
+```bash
+./scripts/start_headless.sh
+```
+
+This script will:
+1. Ensure your `.env` is setup (copies from `.env.example` if missing).
+2. Build and start the service in detached mode (`-d`).
+3. Setup the `data/out` directories for audio file persistence.
+
+**Stop the service:** `docker-compose down`
+**View logs:** `docker-compose logs -f`
+**Run smoke tests:** `./scripts/smoke_test.sh`
 
 ## Docker
 

@@ -13,10 +13,16 @@ services:
       - PORT=3000
     volumes:
       - ./data/out:/app/data/out
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     # Note: To enable host audio playback from within a docker container, 
     # additional device mappings or pulseaudio configurations may be required depending on the OS.
     # For macOS, Docker desktop does not easily share host audio without custom setups.
     # For Linux, you might need to map /dev/snd:
     # devices:
     #   - /dev/snd:/dev/snd
-    restart: unless-stopped

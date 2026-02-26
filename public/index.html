@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GITA - Ghost In The Assistant</title>
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --bg-panel: #141417;
+      --text: #e0e0e0;
+      --accent: #5e6d8a;
+      --accent-glow: rgba(94, 109, 138, 0.4);
+      --border: #2a2a30;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow-x: hidden;
+    }
+    /* Subtle smoke animation */
+    .smoke-container {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.15;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><filter id="a"><feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise"/><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.5 0" in="noise" result="coloredNoise"/></filter><rect width="400" height="400" filter="url(%23a)"/></svg>');
+      animation: smokeMove 40s linear infinite;
+    }
+    @keyframes smokeMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 400px 400px; }
+    }
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-weight: 300;
+      letter-spacing: 4px;
+      margin: 0;
+      color: #fff;
+      text-shadow: 0 0 15px var(--accent-glow);
+    }
+    h2 { font-size: 1rem; margin-top: 5px; color: var(--accent); }
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .panel-title {
+      font-size: 1.1rem;
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #aaa; }
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #1e1e24;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 5px var(--accent-glow);
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover { background: #6f80a0; box-shadow: 0 0 10px var(--accent-glow); }
+    button.secondary { background: #2a2a30; }
+    button.secondary:hover { background: #3a3a40; }
+    .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+    
+    .preset-list, .job-list, .log-list {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #0f0f12;
+    }
+    .item {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+    .item:last-child { border-bottom: none; }
+    .item-actions button { padding: 4px 8px; font-size: 0.8rem; }
+    .log-item {
+      padding: 8px;
+      border-bottom: 1px solid #1a1a1f;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+    .log-time { color: #888; margin-right: 10px; }
+    
+    /* Grid layout */
+    #logs-panel { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+  <div class="smoke-container"></div>
+  <div class="app">
+    <header>
+      <h1>GITA</h1>
+      <h2>Ghost In The Assistant</h2>
+    </header>
+
+    <div class="panel" id="trigger-panel">
+      <h3 class="panel-title">Run Trigger</h3>
+      <div class="form-group">
+        <label>Assistant</label>
+        <select id="t-assistant">
+          <option value="siri">Siri</option>
+          <option value="alexa">Alexa</option>
+          <option value="google">Google</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Wake Phrase (if custom)</label>
+        <input type="text" id="t-wake" placeholder="e.g. Computer">
+      </div>
+      <div class="form-group">
+        <label>Command</label>
+        <input type="text" id="t-command" placeholder="e.g. turn on the lights">
+      </div>
+      <div class="form-group">
+        <label>Voice / Model Override</label>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="t-voice" placeholder="Voice (e.g. troy)" value="troy">
+          <input type="text" id="t-model" placeholder="Model (optional)">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="runTrigger()">Send Trigger</button>
+        <button class="secondary" onclick="savePreset()">Save Preset</button>
+      </div>
+    </div>
+
+    <div class="panel" id="presets-panel">
+      <h3 class="panel-title">Presets</h3>
+      <div class="preset-list" id="preset-list"></div>
+    </div>
+
+    <div class="panel" id="schedule-panel">
+      <h3 class="panel-title">Scheduler</h3>
+      <div class="form-group">
+        <label>Time (HH:MM) - 24hr format</label>
+        <input type="time" id="s-time">
+      </div>
+      <div class="form-group">
+        <label>Preset to Run</label>
+        <select id="s-preset"></select>
+      </div>
+      <div class="btn-row">
+        <button onclick="addSchedule()">Add Schedule</button>
+      </div>
+      <h4 style="margin: 15px 0 5px; font-size: 0.9rem; color: #aaa;">Active Jobs</h4>
+      <div class="job-list" id="job-list"></div>
+    </div>
+
+    <div class="panel" id="logs-panel">
+      <h3 class="panel-title">Logs <button class="secondary" style="float:right; padding: 2px 8px;" onclick="refreshLogs()">Refresh</button></h3>
+      <div class="log-list" id="log-list"></div>
+    </div>
+  </div>
+
+  <script>
+    let presets = [];
+    let jobs = [];
+
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: {} };
+      if (body) {
+        opts.headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(path, opts);
+      return res.json();
+    }
+
+    async function loadData() {
+      const data = await api('/api/data');
+      presets = data.presets || [];
+      jobs = data.jobs || [];
+      renderPresets();
+      renderJobs();
+      updatePresetDropdown();
+      refreshLogs();
+    }
+
+    async function runTrigger(presetOverride = null) {
+      const payload = presetOverride || {
+        assistant: document.getElementById('t-assistant').value,
+        wakePhrase: document.getElementById('t-wake').value,
+        command: document.getElementById('t-command').value,
+        voice: document.getElementById('t-voice').value,
+        model: document.getElementById('t-model').value
+      };
+      
+      if (!payload.command) return alert('Command required');
+      
+      try {
+        await api('/trigger', 'POST', payload);
+        setTimeout(refreshLogs, 1000);
+      } catch (e) { alert('Error: ' + e.message); }
+    }
+
+    async function savePreset() {
+      const name = prompt('Preset name:');
+      if (!name) return;
+      const payload = {
+        id: 'p_' + Date.now(),
+        name,
+        assistant: document.getElementById('t-assistant').value,
+        wakePhrase: document.getElementById('t-wake').value,
+        command: document.getElementById('t-command').value,
+        voice: document.getElementById('t-voice').value,
+        model: document.getElementById('t-model').value
+      };
+      await api('/api/presets', 'POST', payload);
+      loadData();
+    }
+
+    async function deletePreset(id) {
+      await api('/api/presets/' + id, 'DELETE');
+      loadData();
+    }
+
+    async function addSchedule() {
+      const time = document.getElementById('s-time').value;
+      const presetId = document.getElementById('s-preset').value;
+      if (!time || !presetId) return alert('Time and preset required');
+      
+      const payload = {
+        id: 'j_' + Date.now(),
+        time,
+        presetId,
+        active: true
+      };
+      await api('/api/jobs', 'POST', payload);
+      loadData();
+    }
+
+    async function deleteJob(id) {
+      await api('/api/jobs/' + id, 'DELETE');
+      loadData();
+    }
+    
+    async function toggleJob(id) {
+      const job = jobs.find(j => j.id === id);
+      if(job) {
+        job.active = !job.active;
+        await api('/api/jobs/' + id, 'PUT', job);
+        loadData();
+      }
+    }
+
+    async function runJobNow(presetId) {
+      const preset = presets.find(p => p.id === presetId);
+      if (preset) runTrigger(preset);
+    }
+
+    async function refreshLogs() {
+      const res = await api('/api/logs');
+      const ll = document.getElementById('log-list');
+      ll.innerHTML = (res.logs || []).reverse().map(l => `
+        <div class="log-item">
+          <span class="log-time">${new Date(l.time).toLocaleTimeString()}</span>
+          <span>${l.msg}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderPresets() {
+      const pl = document.getElementById('preset-list');
+      pl.innerHTML = presets.map(p => `
+        <div class="item">
+          <div><strong>${p.name}</strong><br><small>${p.assistant}: ${p.command}</small></div>
+          <div class="item-actions">
+            <button onclick='runTrigger(${JSON.stringify(p)})'>Run</button>
+            <button class="secondary" onclick="deletePreset('${p.id}')">X</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updatePresetDropdown() {
+      const sel = document.getElementById('s-preset');
+      sel.innerHTML = presets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+
+    function renderJobs() {
+      const jl = document.getElementById('job-list');
+      jl.innerHTML = jobs.map(j => {
+        const p = presets.find(pr => pr.id === j.presetId);
+        const pName = p ? p.name : 'Unknown';
+        return `
+        <div class="item">
+          <div>
+            <strong>${j.time}</strong> - ${pName} 
+            <span style="color:${j.active?'#4caf50':'#f44336'}">[${j.active?'ON':'OFF'}]</span>
+          </div>
+          <div class="item-actions">
+            <button onclick="toggleJob('${j.id}')">Toggle</button>
+            <button onclick="runJobNow('${j.presetId}')">Run</button>
+            <button class="secondary" onclick="deleteJob('${j.id}')">X</button>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    // Init
+    loadData();
+    setInterval(refreshLogs, 5000);
+  </script>
+</body>
+</html>

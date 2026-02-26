@@ -1,0 +1,37 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Secret Scan
+      run: ./scripts/scan_secrets.sh
+
+    - name: Build and Smoke Test Docker Container
+      run: |
+        docker-compose build
+        docker-compose up -d
+        
+        # Wait for health endpoint
+        sleep 5
+        curl --retry 5 --retry-connrefused --retry-delay 5 http://localhost:3000/health
+        
+        # Shutdown
+        docker-compose down
