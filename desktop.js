@@ -1,6 +1,10 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const URL = 'http://localhost:' + (process.env.PORT || 3000);
 
 function openBrowser() {
@@ -10,12 +14,13 @@ function openBrowser() {
   else if (platform === 'win32') cmd = `start ${URL}`;
   else cmd = `xdg-open ${URL}`;
 
-  exec(cmd, (err) => {
-    if (err) console.error('Failed to open browser:', err);
+  import('child_process').then(({ exec }) => {
+    exec(cmd, (err) => {
+      if (err) console.error('Failed to open browser:', err);
+    });
   });
 }
 
-// Check if server is already running
 const req = http.get(URL + '/health', (res) => {
   if (res.statusCode === 200) {
     console.log('GITA server is already running. Opening browser...');
@@ -29,10 +34,6 @@ const req = http.get(URL + '/health', (res) => {
 });
 
 function startServer() {
-  const child = exec('npm start', { cwd: process.cwd() });
-  child.stdout.pipe(process.stdout);
-  child.stderr.pipe(process.stderr);
-  
-  // Wait a second for express to start listening
+  const child = spawn('npm', ['start'], { cwd: __dirname, stdio: 'inherit' });
   setTimeout(openBrowser, 1500);
 }
