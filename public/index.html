@@ -527,6 +527,7 @@
 
     const $ = (id) => document.getElementById(id);
 
+    const DEFAULT_API_BASE = 'https://tealclaw.ai/gita-api';
     const store = {
       get apiBase() { return localStorage.getItem('gita.apiBase') || ''; },
       set apiBase(v) { localStorage.setItem('gita.apiBase', v || ''); },
@@ -535,7 +536,7 @@
     };
 
     function baseUrl(path) {
-      const b = ($('api-base').value || '').trim() || store.apiBase || '';
+      const b = ($('api-base').value || '').trim() || store.apiBase || DEFAULT_API_BASE;
       if (!b) return path;
       return `${b.replace(/\/$/, '')}${path}`;
     }
@@ -768,7 +769,7 @@
     }
 
     (function init() {
-      $('api-base').value = store.apiBase;
+      $('api-base').value = store.apiBase || DEFAULT_API_BASE;
       $('groq-key').value = store.groqKey;
       initVisualizer();
       loadData().catch(e => setStatus(\`Load error: \${e.message}\`, true));
