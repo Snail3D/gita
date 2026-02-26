@@ -321,3 +321,15 @@ Reliability depends on:
 - device assistant settings
 
 It cannot bypass platform restrictions with silent/private APIs.
+
+## Web Control Deck (Ghost Theme)
+
+The UI at `public/index.html` now includes:
+
+- Smoke-style dark theme + animated visualizer
+- Top activation bar with:
+  - **API Base** (for remote/hybrid setups)
+  - **Groq API Key** (stored in browser localStorage)
+- Trigger payload supports `groqKey` override per request, so keys can be provided from UI without editing `.env`.
+
+For TealClaw route publishing, mirror this deck to `tealclaw/gita/index.html` (done in this build).

@@ -1,207 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>GITA - Ghost In The Assistant</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GITA — Ghost In The Assistant</title>
   <style>
     :root {
-      --bg: #0a0a0c;
-      --bg-panel: #141417;
-      --text: #e0e0e0;
-      --accent: #5e6d8a;
-      --accent-glow: rgba(94, 109, 138, 0.4);
-      --border: #2a2a30;
+      --bg: #06070b;
+      --panel: rgba(16, 18, 28, 0.84);
+      --panel-border: rgba(120, 140, 190, 0.2);
+      --text: #e8ecff;
+      --muted: #9ba5d1;
+      --accent: #8d79ff;
+      --accent2: #4ee2ff;
+      --danger: #ff6c8c;
     }
+
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: var(--bg);
+      min-height: 100vh;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1a1133 0, #0a0d17 35%, #05060b 100%);
       overflow-x: hidden;
     }
-    /* Subtle smoke animation */
-    .smoke-container {
+
+    .smoke, .smoke::before, .smoke::after {
       position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
+      inset: -25%;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.15;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><filter id="a"><feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise"/><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.5 0" in="noise" result="coloredNoise"/></filter><rect width="400" height="400" filter="url(%23a)"/></svg>');
-      animation: smokeMove 40s linear infinite;
+      content: "";
+      background:
+        radial-gradient(closest-side, rgba(141, 121, 255, .24), rgba(141, 121, 255, 0) 70%) 10% 20% / 34vmax 34vmax,
+        radial-gradient(closest-side, rgba(78, 226, 255, .18), rgba(78, 226, 255, 0) 70%) 80% 30% / 30vmax 30vmax,
+        radial-gradient(closest-side, rgba(208, 223, 255, .1), rgba(208, 223, 255, 0) 72%) 30% 75% / 36vmax 36vmax;
+      filter: blur(38px) saturate(130%);
+      animation: drift 24s linear infinite;
+      opacity: .55;
     }
-    @keyframes smokeMove {
-      0% { background-position: 0 0; }
-      100% { background-position: 400px 400px; }
-    }
-    .app {
+    .smoke::before { animation-duration: 30s; animation-direction: reverse; opacity: .42; }
+    .smoke::after { animation-duration: 42s; opacity: .35; }
+    @keyframes drift { from { transform: translate3d(-4%, -2%, 0) rotate(0.001deg);} to { transform: translate3d(4%, 2%, 0) rotate(0.001deg);} }
+
+    .shell {
       position: relative;
       z-index: 1;
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 20px;
+      max-width: 1160px;
+      margin: 18px auto 36px;
+      padding: 0 16px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 14px;
     }
-    header {
-      grid-column: 1 / -1;
-      text-align: center;
-      margin-bottom: 20px;
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 28px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.02);
+      padding: 14px;
     }
+
+    .header {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
     h1 {
-      font-weight: 300;
-      letter-spacing: 4px;
       margin: 0;
-      color: #fff;
-      text-shadow: 0 0 15px var(--accent-glow);
+      font-size: clamp(26px, 4vw, 38px);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(141, 121, 255, .35);
     }
-    h2 { font-size: 1rem; margin-top: 5px; color: var(--accent); }
-    .panel {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    .sub { color: var(--muted); margin-top: 4px; }
+
+    .kv {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 10px;
+      margin-top: 10px;
     }
+
+    .viz {
+      height: 140px;
+      border-radius: 10px;
+      border: 1px solid rgba(141,121,255,.32);
+      background: linear-gradient(180deg, rgba(141,121,255,.13), rgba(78,226,255,.06));
+      position: relative;
+      overflow: hidden;
+    }
+    #viz { width: 100%; height: 100%; display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+    }
+
     .panel-title {
-      font-size: 1.1rem;
-      margin-top: 0;
-      margin-bottom: 15px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 10px;
+      margin: 0 0 12px;
+      color: #f2f5ff;
+      font-size: 1.02rem;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding-bottom: 8px;
     }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #aaa; }
+
+    .f { display: grid; gap: 6px; margin-bottom: 10px; }
+    .f label { color: var(--muted); font-size: .84rem; }
     input, select, textarea {
       width: 100%;
-      box-sizing: border-box;
-      background: #1e1e24;
-      border: 1px solid var(--border);
-      color: #fff;
-      padding: 10px;
-      border-radius: 4px;
-      font-family: inherit;
+      border: 1px solid rgba(170,185,255,.25);
+      border-radius: 10px;
+      background: rgba(7,8,13,.8);
+      color: var(--text);
+      padding: 10px 11px;
     }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 5px var(--accent-glow);
-    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(78,226,255,.15); }
+
+    .row { display: grid; gap: 8px; grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     button {
-      background: var(--accent);
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(141,121,255,.3), rgba(141,121,255,.16));
       color: #fff;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 4px;
+      padding: 9px 12px;
+      border-radius: 10px;
       cursor: pointer;
       font-weight: 600;
-      transition: all 0.2s;
     }
-    button:hover { background: #6f80a0; box-shadow: 0 0 10px var(--accent-glow); }
-    button.secondary { background: #2a2a30; }
-    button.secondary:hover { background: #3a3a40; }
-    .btn-row { display: flex; gap: 10px; margin-top: 10px; }
-    
-    .preset-list, .job-list, .log-list {
-      max-height: 250px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: #0f0f12;
+    button:hover { filter: brightness(1.1); }
+    button.secondary { background: rgba(255,255,255,.06); }
+    button.danger { background: rgba(255,108,140,.2); border-color: rgba(255,108,140,.45); }
+
+    .list {
+      max-height: 280px;
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 10px;
+      background: rgba(0,0,0,.28);
     }
     .item {
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      font-size: 0.9rem;
+      gap: 8px;
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: .9rem;
     }
     .item:last-child { border-bottom: none; }
-    .item-actions button { padding: 4px 8px; font-size: 0.8rem; }
-    .log-item {
-      padding: 8px;
-      border-bottom: 1px solid #1a1a1f;
-      font-family: monospace;
-      font-size: 0.8rem;
+
+    .logs { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; }
+
+    @media (max-width: 980px) {
+      .header, .grid { grid-template-columns: 1fr; }
     }
-    .log-time { color: #888; margin-right: 10px; }
-    
-    /* Grid layout */
-    #logs-panel { grid-column: 1 / -1; }
   </style>
 </head>
 <body>
-  <div class="smoke-container"></div>
-  <div class="app">
-    <header>
-      <h1>GITA</h1>
-      <h2>Ghost In The Assistant</h2>
-    </header>
+  <div class="smoke"></div>
 
-    <div class="panel" id="trigger-panel">
-      <h3 class="panel-title">Run Trigger</h3>
-      <div class="form-group">
-        <label>Assistant</label>
-        <select id="t-assistant">
-          <option value="siri">Siri</option>
-          <option value="alexa">Alexa</option>
-          <option value="google">Google</option>
-          <option value="custom">Custom</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Wake Phrase (if custom)</label>
-        <input type="text" id="t-wake" placeholder="e.g. Computer">
-      </div>
-      <div class="form-group">
-        <label>Command</label>
-        <input type="text" id="t-command" placeholder="e.g. turn on the lights">
-      </div>
-      <div class="form-group">
-        <label>Voice / Model Override</label>
-        <div style="display:flex; gap:10px;">
-          <input type="text" id="t-voice" placeholder="Voice (e.g. troy)" value="troy">
-          <input type="text" id="t-model" placeholder="Model (optional)">
+  <main class="shell">
+    <section class="header">
+      <div class="card">
+        <h1>GITA</h1>
+        <div class="sub">Ghost In The Assistant • Control Deck</div>
+
+        <div class="kv">
+          <div class="f">
+            <label>API Base</label>
+            <input id="api-base" placeholder="https://tealclaw.ai/gita-api" />
+          </div>
+          <div class="f">
+            <label>Groq API Key (activate)</label>
+            <input id="groq-key" type="password" placeholder="gsk_..." />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button onclick="saveActivation()">Activate</button>
+          <button class="secondary" onclick="clearActivation()">Clear Key</button>
+          <button class="secondary" onclick="pingHealth()">Ping Health</button>
+          <span id="status" class="sub"></span>
         </div>
       </div>
-      <div class="btn-row">
-        <button onclick="runTrigger()">Send Trigger</button>
-        <button class="secondary" onclick="savePreset()">Save Preset</button>
-      </div>
-    </div>
 
-    <div class="panel" id="presets-panel">
-      <h3 class="panel-title">Presets</h3>
-      <div class="preset-list" id="preset-list"></div>
-    </div>
+      <div class="card viz">
+        <canvas id="viz"></canvas>
+      </div>
+    </section>
 
-    <div class="panel" id="schedule-panel">
-      <h3 class="panel-title">Scheduler</h3>
-      <div class="form-group">
-        <label>Time (HH:MM) - 24hr format</label>
-        <input type="time" id="s-time">
+    <section class="grid">
+      <div class="card">
+        <h3 class="panel-title">Trigger Console</h3>
+        <div class="f">
+          <label>Assistant</label>
+          <select id="t-assistant">
+            <option value="alexa">Alexa</option>
+            <option value="google">Google</option>
+            <option value="siri">Siri</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="f">
+          <label>Wake Phrase (custom only)</label>
+          <input id="t-wake" placeholder="Computer" />
+        </div>
+        <div class="f">
+          <label>Command</label>
+          <input id="t-command" placeholder="play Night Owl by Galimatias" />
+        </div>
+        <div class="row">
+          <div class="f">
+            <label>Voice</label>
+            <input id="t-voice" placeholder="hannah / troy / daniel" />
+          </div>
+          <div class="f">
+            <label>Model</label>
+            <input id="t-model" placeholder="canopylabs/orpheus-v1-english" />
+          </div>
+        </div>
+        <div class="btns">
+          <button onclick="runTrigger()">Send Trigger</button>
+          <button class="secondary" onclick="savePreset()">Save Preset</button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Preset to Run</label>
-        <select id="s-preset"></select>
-      </div>
-      <div class="btn-row">
-        <button onclick="addSchedule()">Add Schedule</button>
-      </div>
-      <h4 style="margin: 15px 0 5px; font-size: 0.9rem; color: #aaa;">Active Jobs</h4>
-      <div class="job-list" id="job-list"></div>
-    </div>
 
-    <div class="panel" id="logs-panel">
-      <h3 class="panel-title">Logs <button class="secondary" style="float:right; padding: 2px 8px;" onclick="refreshLogs()">Refresh</button></h3>
-      <div class="log-list" id="log-list"></div>
-    </div>
-  </div>
+      <div class="card">
+        <h3 class="panel-title">Scheduler</h3>
+        <div class="f">
+          <label>Time (24h)</label>
+          <input id="s-time" type="time" />
+        </div>
+        <div class="f">
+          <label>Preset</label>
+          <select id="s-preset"></select>
+        </div>
+        <div class="btns"><button onclick="addSchedule()">Add Job</button></div>
+        <h4 class="sub">Active Jobs</h4>
+        <div class="list" id="job-list"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h3 class="panel-title">Presets</h3>
+        <div class="list" id="preset-list"></div>
+      </div>
+      <div class="card">
+        <h3 class="panel-title">Logs</h3>
+        <div class="btns" style="margin-bottom:8px;"><button class="secondary" onclick="refreshLogs()">Refresh</button></div>
+        <div class="list logs" id="log-list"></div>
+      </div>
+    </section>
+  </main>
 
   <script>
     let presets = [];
     let jobs = [];
+
+    const $ = (id) => document.getElementById(id);
+
+    const store = {
+      get apiBase() { return localStorage.getItem('gita.apiBase') || ''; },
+      set apiBase(v) { localStorage.setItem('gita.apiBase', v || ''); },
+      get groqKey() { return localStorage.getItem('gita.groqKey') || ''; },
+      set groqKey(v) { if (v) localStorage.setItem('gita.groqKey', v); else localStorage.removeItem('gita.groqKey'); }
+    };
+
+    function baseUrl(path) {
+      const b = ($('api-base').value || '').trim() || store.apiBase || '';
+      if (!b) return path;
+      return `${b.replace(/\/$/, '')}${path}`;
+    }
 
     async function api(path, method = 'GET', body = null) {
       const opts = { method, headers: {} };
@@ -209,8 +284,39 @@
         opts.headers['Content-Type'] = 'application/json';
         opts.body = JSON.stringify(body);
       }
-      const res = await fetch(path, opts);
+      const res = await fetch(baseUrl(path), opts);
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
       return res.json();
+    }
+
+    function setStatus(msg, bad = false) {
+      const el = $('status');
+      el.textContent = msg;
+      el.style.color = bad ? '#ff9ab0' : '#9be8d9';
+    }
+
+    function saveActivation() {
+      store.apiBase = $('api-base').value.trim();
+      store.groqKey = $('groq-key').value.trim();
+      setStatus(store.groqKey ? 'Activated (Groq key saved locally).' : 'Activated (no Groq key set).');
+    }
+
+    function clearActivation() {
+      $('groq-key').value = '';
+      store.groqKey = '';
+      setStatus('Groq key cleared.');
+    }
+
+    async function pingHealth() {
+      try {
+        const j = await api('/health');
+        setStatus(`Health ok • uptime ${Math.round(j.uptime || 0)}s`);
+      } catch (e) {
+        setStatus(`Health failed: ${e.message}`, true);
+      }
     }
 
     async function loadData() {
@@ -223,130 +329,147 @@
       refreshLogs();
     }
 
-    async function runTrigger(presetOverride = null) {
-      const payload = presetOverride || {
-        assistant: document.getElementById('t-assistant').value,
-        wakePhrase: document.getElementById('t-wake').value,
-        command: document.getElementById('t-command').value,
-        voice: document.getElementById('t-voice').value,
-        model: document.getElementById('t-model').value
+    function triggerPayloadFromUI() {
+      return {
+        assistant: $('t-assistant').value,
+        wakePhrase: $('t-wake').value,
+        command: $('t-command').value,
+        voice: $('t-voice').value,
+        model: $('t-model').value,
+        groqKey: $('groq-key').value.trim() || store.groqKey || undefined
       };
-      
+    }
+
+    async function runTrigger(presetOverride = null) {
+      const payload = presetOverride || triggerPayloadFromUI();
       if (!payload.command) return alert('Command required');
-      
       try {
         await api('/trigger', 'POST', payload);
-        setTimeout(refreshLogs, 1000);
-      } catch (e) { alert('Error: ' + e.message); }
+        setStatus(`Sent: ${payload.assistant} • ${payload.command}`);
+        setTimeout(refreshLogs, 800);
+      } catch (e) {
+        setStatus(`Trigger error: ${e.message}`, true);
+      }
     }
 
     async function savePreset() {
       const name = prompt('Preset name:');
       if (!name) return;
-      const payload = {
-        id: 'p_' + Date.now(),
-        name,
-        assistant: document.getElementById('t-assistant').value,
-        wakePhrase: document.getElementById('t-wake').value,
-        command: document.getElementById('t-command').value,
-        voice: document.getElementById('t-voice').value,
-        model: document.getElementById('t-model').value
-      };
-      await api('/api/presets', 'POST', payload);
+      const p = triggerPayloadFromUI();
+      await api('/api/presets', 'POST', { id: `p_${Date.now()}`, name, ...p });
       loadData();
     }
 
-    async function deletePreset(id) {
-      await api('/api/presets/' + id, 'DELETE');
-      loadData();
-    }
+    async function deletePreset(id) { await api(`/api/presets/${id}`, 'DELETE'); loadData(); }
 
     async function addSchedule() {
-      const time = document.getElementById('s-time').value;
-      const presetId = document.getElementById('s-preset').value;
+      const time = $('s-time').value;
+      const presetId = $('s-preset').value;
       if (!time || !presetId) return alert('Time and preset required');
-      
-      const payload = {
-        id: 'j_' + Date.now(),
-        time,
-        presetId,
-        active: true
-      };
-      await api('/api/jobs', 'POST', payload);
+      await api('/api/jobs', 'POST', { id: `j_${Date.now()}`, time, presetId, active: true });
       loadData();
     }
 
-    async function deleteJob(id) {
-      await api('/api/jobs/' + id, 'DELETE');
-      loadData();
-    }
-    
+    async function deleteJob(id) { await api(`/api/jobs/${id}`, 'DELETE'); loadData(); }
+
     async function toggleJob(id) {
       const job = jobs.find(j => j.id === id);
-      if(job) {
-        job.active = !job.active;
-        await api('/api/jobs/' + id, 'PUT', job);
-        loadData();
-      }
+      if (!job) return;
+      await api(`/api/jobs/${id}`, 'PUT', { ...job, active: !job.active });
+      loadData();
     }
 
     async function runJobNow(presetId) {
-      const preset = presets.find(p => p.id === presetId);
-      if (preset) runTrigger(preset);
+      const p = presets.find(x => x.id === presetId);
+      if (p) runTrigger(p);
     }
 
     async function refreshLogs() {
       const res = await api('/api/logs');
-      const ll = document.getElementById('log-list');
-      ll.innerHTML = (res.logs || []).reverse().map(l => `
-        <div class="log-item">
-          <span class="log-time">${new Date(l.time).toLocaleTimeString()}</span>
-          <span>${l.msg}</span>
-        </div>
-      `).join('');
+      $('log-list').innerHTML = (res.logs || []).slice().reverse().map(l =>
+        `<div class="item"><div><span style="color:#99a8de">${new Date(l.time).toLocaleTimeString()}</span> ${l.msg}</div></div>`
+      ).join('');
     }
 
     function renderPresets() {
-      const pl = document.getElementById('preset-list');
-      pl.innerHTML = presets.map(p => `
+      $('preset-list').innerHTML = presets.map(p => `
         <div class="item">
-          <div><strong>${p.name}</strong><br><small>${p.assistant}: ${p.command}</small></div>
-          <div class="item-actions">
-            <button onclick='runTrigger(${JSON.stringify(p)})'>Run</button>
-            <button class="secondary" onclick="deletePreset('${p.id}')">X</button>
+          <div><strong>${p.name}</strong><br><small style="color:#a8b1da">${p.assistant}: ${p.command}</small></div>
+          <div class="btns" style="margin:0">
+            <button class="secondary" onclick="runPreset('${p.id}')">Run</button>
+            <button class="danger" onclick="deletePreset('${p.id}')">Delete</button>
           </div>
         </div>
       `).join('');
     }
 
+    function runPreset(id){ const p = presets.find(x => x.id === id); if (p) runTrigger(p); }
+
     function updatePresetDropdown() {
-      const sel = document.getElementById('s-preset');
-      sel.innerHTML = presets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+      $('s-preset').innerHTML = presets.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
     }
 
     function renderJobs() {
-      const jl = document.getElementById('job-list');
-      jl.innerHTML = jobs.map(j => {
-        const p = presets.find(pr => pr.id === j.presetId);
-        const pName = p ? p.name : 'Unknown';
+      $('job-list').innerHTML = jobs.map(j => {
+        const p = presets.find(x => x.id === j.presetId);
+        const n = p ? p.name : 'Unknown';
         return `
-        <div class="item">
-          <div>
-            <strong>${j.time}</strong> - ${pName} 
-            <span style="color:${j.active?'#4caf50':'#f44336'}">[${j.active?'ON':'OFF'}]</span>
+          <div class="item">
+            <div><strong>${j.time}</strong> • ${n} <span style="color:${j.active ? '#74f3a5' : '#ff9ab0'}">${j.active ? 'ON' : 'OFF'}</span></div>
+            <div class="btns" style="margin:0">
+              <button class="secondary" onclick="toggleJob('${j.id}')">Toggle</button>
+              <button class="secondary" onclick="runJobNow('${j.presetId}')">Run</button>
+              <button class="danger" onclick="deleteJob('${j.id}')">Delete</button>
+            </div>
           </div>
-          <div class="item-actions">
-            <button onclick="toggleJob('${j.id}')">Toggle</button>
-            <button onclick="runJobNow('${j.presetId}')">Run</button>
-            <button class="secondary" onclick="deleteJob('${j.id}')">X</button>
-          </div>
-        </div>
-      `}).join('');
+        `;
+      }).join('');
     }
 
-    // Init
-    loadData();
-    setInterval(refreshLogs, 5000);
+    function initVisualizer() {
+      const c = $('viz');
+      const ctx = c.getContext('2d');
+      const resize = () => {
+        c.width = c.clientWidth * devicePixelRatio;
+        c.height = c.clientHeight * devicePixelRatio;
+        ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+      };
+      resize();
+      addEventListener('resize', resize);
+
+      const bars = new Array(56).fill(0).map(() => 0.2 + Math.random() * 0.4);
+      function tick(t) {
+        const w = c.clientWidth, h = c.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        const grd = ctx.createLinearGradient(0, h, 0, 0);
+        grd.addColorStop(0, 'rgba(78,226,255,0.25)');
+        grd.addColorStop(1, 'rgba(141,121,255,0.85)');
+        ctx.fillStyle = grd;
+
+        const bw = w / bars.length;
+        for (let i = 0; i < bars.length; i++) {
+          bars[i] += (Math.random() - 0.5) * 0.11;
+          bars[i] = Math.max(0.08, Math.min(1, bars[i]));
+          const pulse = 0.45 + 0.45 * Math.sin((t / 750) + i * 0.25);
+          const bh = (bars[i] * pulse) * h * 0.95;
+          const x = i * bw + 1;
+          const y = h - bh;
+          ctx.fillRect(x, y, Math.max(2, bw - 2), bh);
+        }
+
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    (function init() {
+      $('api-base').value = store.apiBase;
+      $('groq-key').value = store.groqKey;
+      initVisualizer();
+      loadData().catch(e => setStatus(`Load error: ${e.message}`, true));
+      setInterval(refreshLogs, 5000);
+    })();
   </script>
 </body>
 </html>

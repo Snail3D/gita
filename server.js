@@ -33,8 +33,8 @@ function resolveWake({ assistant, wakePhrase }) {
   return '';
 }
 
-async function speakText(text, { voice, speed, model } = {}) {
-  const audioPath = await generateTTS(text, voice, speed, model);
+async function speakText(text, { voice, speed, model, groqKey } = {}) {
+  const audioPath = await generateTTS(text, voice, speed, model, groqKey);
   const played = await playAudio(audioPath);
   return { text, audioPath, played };
 }
@@ -46,6 +46,7 @@ async function runTrigger(payload) {
     voice,
     speed,
     model,
+    groqKey,
     wakePhrase,
     wakeDelayMs,
     prePauseMs,
@@ -87,11 +88,11 @@ async function runTrigger(payload) {
   // Pre-generate both clips before playback to avoid dead air between wake and command.
   if (wake) {
     console.log(`Pre-generating wake TTS for: "${wake}" @${effectiveSpeed}x`);
-    wakeAudioPath = await generateTTS(wake, voice, effectiveSpeed, model);
+    wakeAudioPath = await generateTTS(wake, voice, effectiveSpeed, model, groqKey);
   }
 
   console.log(`Pre-generating command TTS for: "${command}" @${effectiveSpeed}x`);
-  const commandAudioPath = await generateTTS(command, voice, effectiveSpeed, model);
+  const commandAudioPath = await generateTTS(command, voice, effectiveSpeed, model, groqKey);
 
   if (wakeAudioPath) {
     playedWake = await playAudio(wakeAudioPath);

@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-async function generateGroqTTS(text, voiceOverride, speedOverride, modelOverride) {
-  const apiKey = process.env.GROQ_API_KEY;
+async function generateGroqTTS(text, voiceOverride, speedOverride, modelOverride, apiKeyOverride) {
+  const apiKey = apiKeyOverride || process.env.GROQ_API_KEY;
   if (!apiKey) {
     throw new Error('GROQ_API_KEY is not set in environment.');
   }
@@ -96,12 +96,12 @@ async function generateVoiceboxTTS(text, profileOverride, modelOverride) {
   }
 }
 
-export async function generateTTS(text, voiceOverride, speedOverride, modelOverride) {
+export async function generateTTS(text, voiceOverride, speedOverride, modelOverride, apiKeyOverride) {
   const provider = String(process.env.TTS_PROVIDER || 'groq').toLowerCase();
 
   if (provider === 'voicebox') {
     return generateVoiceboxTTS(text, voiceOverride, modelOverride);
   }
 
-  return generateGroqTTS(text, voiceOverride, speedOverride, modelOverride);
+  return generateGroqTTS(text, voiceOverride, speedOverride, modelOverride, apiKeyOverride);
 }
